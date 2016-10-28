@@ -5,6 +5,8 @@
     'use strict';
     window.Whisper = window.Whisper || {};
 
+    var VERSION = 0;
+
     Whisper.KeyVerificationView = Whisper.View.extend({
         className: 'key-verification',
         templateName: 'key_verification',
@@ -16,13 +18,13 @@
             Promise.all([
                 this.loadTheirKey(),
                 this.loadOurKey(),
-            ]).then(this.generateSecurityNumber.bind(this))
-              .then(this.render.bind(this));
-              //.then(this.makeQRCode.bind(this));
+            ]).then(this.generateFingerprint.bind(this))
+              .then(this.render.bind(this))
+              .then(this.makeQRCode.bind(this));
         },
         makeQRCode: function() {
             new QRCode(this.$('.qr')[0]).makeCode(
-                dcodeIO.ByteBuffer.wrap(this.our_key).toString('base64')
+                this.scannableFingerprint.encode().toString('binary')
             );
         },
         loadTheirKey: function() {
@@ -47,15 +49,16 @@
                 }.bind(this));
             }
         },
-        generateSecurityNumber: function() {
+        generateFingerprint: function() {
             return new libsignal.FingerprintGenerator(5200).createFor(
                 this.our_number, this.our_key, this.model.id, this.their_key
-            ).then(function(securityNumber) {
-                this.securityNumber = securityNumber;
+            ).then(function(fingerprint) {
+                this.displayableFingerprint = fingerprint.displayableFingerprint;
+                this.scannableFingerprint = fingerprint.scannableFingerprint;
             }.bind(this));
         },
         render_attributes: function() {
-            var s = this.securityNumber;
+            var s = this.displayableFingerprint;
             var chunks = [];
             for (var i = 0; i < s.length; i += 5) {
                 chunks.push(s.substring(i, i+5));
