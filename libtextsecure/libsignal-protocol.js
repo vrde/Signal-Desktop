@@ -35477,6 +35477,21 @@ Internal.protoText = function() {
 		'}\n' +
 ''	;
 
+	protoText['protos/FingerprintProtocol.proto'] =
+		'package textsecure;\n' +
+		'option java_package = "org.whispersystems.libsignal.fingerprint";\n' +
+		'option java_outer_classname = "FingerprintProtos";\n' +
+		'message FingerprintData {\n' +
+		'  optional bytes publicKey  = 1;\n' +
+		'  optional bytes identifier = 2;\n' +
+		'}\n' +
+		'message CombinedFingerprint {\n' +
+		'  optional uint32          version           = 1;\n' +
+		'  optional FingerprintData localFingerprint  = 2;\n' +
+		'  optional FingerprintData remoteFingerprint = 3;\n' +
+		'}\n' +
+''	;
+
 	return protoText;
 }();
 /* vim: ts=4:sw=4 */
@@ -35490,8 +35505,11 @@ Internal.protobuf = function() {
     }
 
     var protocolMessages = loadProtoBufs('WhisperTextProtocol.proto');
+    var fingerprintMessages = loadProtoBufs('FingerprintProtocol.proto');
 
     return {
+        FingerprintData           : fingerprintMessages.FingerprintData,
+        CombinedFingerprint       : fingerprintMessages.CombinedFingerprint,
         WhisperMessage            : protocolMessages.WhisperMessage,
         PreKeyWhisperMessage      : protocolMessages.PreKeyWhisperMessage
     };
@@ -36449,7 +36467,8 @@ Internal.SessionLock.queueJobForNumber = function queueJobForNumber(number, runJ
 })();
 
 (function() {
-    var VERSION = 0;
+    var DISPLAYABLE_FINGERPRINT_VERSION = 0;
+    var SCANNABLE_FINGERPRINT_VERSION = 0;
 
     function iterateHash(data, key, count) {
         data = dcodeIO.ByteBuffer.concat([data, key]).toArrayBuffer();
@@ -36481,7 +36500,7 @@ Internal.SessionLock.queueJobForNumber = function queueJobForNumber(number, runJ
 
     function getDisplayStringFor(identifier, key, iterations) {
         var bytes = dcodeIO.ByteBuffer.concat([
-            shortToArrayBuffer(VERSION), key, identifier
+            shortToArrayBuffer(DISPLAYABLE_FINGERPRINT_VERSION), key, identifier
         ]).toArrayBuffer();
         return iterateHash(bytes, key, iterations).then(function(output) {
             output = new Uint8Array(output);
@@ -36491,6 +36510,39 @@ Internal.SessionLock.queueJobForNumber = function queueJobForNumber(number, runJ
                 getEncodedChunk(output, 15) +
                 getEncodedChunk(output, 20) +
                 getEncodedChunk(output, 25);
+        });
+    }
+
+    function getDisplayableFingerprint(localIdentifier, localIdentityKey,
+                        remoteIdentifier, remoteIdentityKey, iterations) {
+        if (typeof localIdentifier !== 'string' ||
+            typeof remoteIdentifier !== 'string' ||
+            !(localIdentityKey instanceof ArrayBuffer) ||
+            !(remoteIdentityKey instanceof ArrayBuffer)) {
+
+          throw new Error('Invalid arguments');
+        }
+
+        return Promise.all([
+            getDisplayStringFor(localIdentifier, localIdentityKey, iterations),
+            getDisplayStringFor(remoteIdentifier, remoteIdentityKey, iterations)
+        ]).then(function(fingerprints) {
+            return fingerprints.sort().join('');
+        });
+    }
+
+    function getScannableFingerprint(localIdentifier, localIdentityKey,
+                        remoteIdentifier, remoteIdentityKey) {
+        return new Internal.protobuf.CombinedFingerprint({
+            version: SCANNABLE_FINGERPRINT_VERSION,
+            localFingerprint: {
+                publicKey  : localIdentityKey,
+                identifier : localIdentifier
+            },
+            remoteFingerprint: {
+                publicKey  : remoteIdentityKey,
+                identifier : remoteIdentifier
+            }
         });
     }
 
@@ -36509,10 +36561,15 @@ Internal.SessionLock.queueJobForNumber = function queueJobForNumber(number, runJ
             }
 
             return Promise.all([
-                getDisplayStringFor(localIdentifier, localIdentityKey, this.iterations),
-                getDisplayStringFor(remoteIdentifier, remoteIdentityKey, this.iterations)
+                getDisplayableFingerprint(localIdentifier, localIdentityKey,
+                  remoteIdentifier, remoteIdentityKey, this.iterations),
+                getScannableFingerprint(localIdentifier, localIdentityKey,
+                  remoteIdentifier, remoteIdentityKey)
             ]).then(function(fingerprints) {
-                return fingerprints.sort().join('');
+                return {
+                    displayableFingerprint : fingerprints[0],
+                    scannableFingerprint   : fingerprints[1]
+                };
             });
         }
     };
