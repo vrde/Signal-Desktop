@@ -358,6 +358,12 @@
             if (dataMessage.group) {
                 conversationId = dataMessage.group.id;
             }
+
+            if (dataMessage.profileKey) {
+              var c = ConversationController.get(source);
+              c.setProfileKey(dataMessage.profileKey);
+            }
+
             console.log('queuing handleDataMessage', message.idForLogging());
 
             var conversation = ConversationController.create({id: conversationId});
