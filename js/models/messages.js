@@ -358,6 +358,7 @@
             if (dataMessage.group) {
                 conversationId = dataMessage.group.id;
             }
+
             console.log('queuing handleDataMessage', message.idForLogging());
 
             var conversation = ConversationController.create({id: conversationId});
@@ -473,6 +474,17 @@
                                 lastMessage : message.getNotificationText(),
                                 timestamp: message.get('sent_at')
                             });
+                        }
+
+                        if (dataMessage.profileKey) {
+                          var profileKey = dataMessage.profileKey.toArrayBuffer();
+
+                          if (conversation.isPrivate()) {
+                            conversation.set({profileKey: profileKey});
+                          } else {
+                            var sender = ConversationController.add({id: source});
+                            sender.setProfileKey(profileKey);
+                          }
                         }
 
                         console.log('beginning saves in handleDataMessage', message.idForLogging());
