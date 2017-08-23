@@ -38,6 +38,7 @@
         });
     });
 
+    var CDN_URL = 'https://cdn-staging.signal.org';
     var SERVER_URL = 'https://textsecure-service-staging.whispersystems.org';
     var SERVER_PORTS = [80, 4433, 8443];
     var messageReceiver;
@@ -126,7 +127,7 @@
         messageReceiver.addEventListener('progress', onProgress);
 
         window.textsecure.messaging = new textsecure.MessageSender(
-            SERVER_URL, SERVER_PORTS, USERNAME, PASSWORD
+            SERVER_URL, SERVER_PORTS, USERNAME, PASSWORD, CDN_URL
         );
 
         if (firstRun === true && textsecure.storage.user.getDeviceId() != '1') {

@@ -140,12 +140,13 @@ var TextSecureServer = (function() {
         profile    : "v1/profile"
     };
 
-    function TextSecureServer(url, ports, username, password) {
+    function TextSecureServer(url, ports, username, password, cdn_url) {
         if (typeof url !== 'string') {
             throw new Error('Invalid server url');
         }
         this.portManager = new PortManager(ports);
         this.url = url;
+        this.cdn_url = cdn_url;
         this.username = username;
         this.password = password;
     }
@@ -160,9 +161,9 @@ var TextSecureServer = (function() {
                 param.urlParameters = '';
             }
             return ajax(null, {
-                    host        : this.url,
+                    host        : param.host || this.url,
                     ports       : this.portManager.ports,
-                    path        : URL_CALLS[param.call] + param.urlParameters,
+                    path        : param.path || URL_CALLS[param.call] + param.urlParameters,
                     type        : param.httpType,
                     data        : param.jsonData && textsecure.utils.jsonThing(param.jsonData),
                     contentType : 'application/json; charset=utf-8',
@@ -210,6 +211,13 @@ var TextSecureServer = (function() {
                 call                : 'profile',
                 httpType            : 'GET',
                 urlParameters       : '/' + number,
+            });
+        },
+        getAvatar: function(path) {
+            return ajax(this.cdn_url + '/' + path, {
+                type        : "GET",
+                responseType: "arraybuffer",
+                contentType : "application/octet-stream"
             });
         },
         requestVerificationSMS: function(number) {
