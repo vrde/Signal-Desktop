@@ -361,7 +361,7 @@
 
             if (dataMessage.profileKey) {
               var c = ConversationController.get(source);
-              c.setProfileKey(dataMessage.profileKey);
+              c.setProfileKey(dataMessage.profileKey.toArrayBuffer());
             }
 
             console.log('queuing handleDataMessage', message.idForLogging());
