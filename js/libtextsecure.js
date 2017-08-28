@@ -40222,6 +40222,10 @@ ProtoParser.prototype = {
                 this.buffer.skip(attachmentLen);
             }
 
+            if (proto.profileKey) {
+                proto.profileKey = proto.profileKey.toArrayBuffer();
+            }
+
             return proto;
         } catch(e) {
             console.log(e);
