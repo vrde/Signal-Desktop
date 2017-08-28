@@ -917,6 +917,12 @@
         }
     },
 
+    getProfileName: function() {
+        if (this.isPrivate() && !this.get('name')) {
+          return this.get('profileName');
+        }
+    },
+
     getNumber: function() {
         if (!this.isPrivate()) {
             return '';
