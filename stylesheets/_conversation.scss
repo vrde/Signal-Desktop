@@ -383,6 +383,10 @@ li.entry .error-icon-container {
   opacity: 0.8;
   margin-bottom: 5px;
   font-weight: bold;
+
+  .profileName {
+    float: right;
+  }
 }
 
 .timestamp {
