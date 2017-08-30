@@ -39468,6 +39468,7 @@ function Message(options) {
     this.timestamp   = options.timestamp;
     this.needsSync   = options.needsSync;
     this.expireTimer = options.expireTimer;
+    this.profileKey  = options.profileKey;
 
     if (!(this.recipients instanceof Array) || this.recipients.length < 1) {
         throw new Error('Invalid recipient list');
@@ -39539,6 +39540,10 @@ Message.prototype = {
         }
         if (this.expireTimer) {
             proto.expireTimer = this.expireTimer;
+        }
+
+        if (this.profileKey) {
+          proto.profileKey = this.profileKey;
         }
 
         this.dataMessage = proto;
@@ -39877,14 +39882,15 @@ MessageSender.prototype = {
         }.bind(this));
     },
 
-    sendMessageToNumber: function(number, messageText, attachments, timestamp, expireTimer) {
+    sendMessageToNumber: function(number, messageText, attachments, timestamp, expireTimer, profileKey) {
         return this.sendMessage({
             recipients  : [number],
             body        : messageText,
             timestamp   : timestamp,
             attachments : attachments,
             needsSync   : true,
-            expireTimer : expireTimer
+            expireTimer : expireTimer,
+            profileKey  : profileKey
         });
     },
 
@@ -39909,7 +39915,7 @@ MessageSender.prototype = {
         }.bind(this));
     },
 
-    sendMessageToGroup: function(groupId, messageText, attachments, timestamp, expireTimer) {
+    sendMessageToGroup: function(groupId, messageText, attachments, timestamp, expireTimer, profileKey) {
         return textsecure.storage.groups.getNumbers(groupId).then(function(numbers) {
             if (numbers === undefined)
                 return Promise.reject(new Error("Unknown Group"));
@@ -39927,6 +39933,7 @@ MessageSender.prototype = {
                 attachments : attachments,
                 needsSync   : true,
                 expireTimer : expireTimer,
+                profileKey  : profileKey,
                 group: {
                     id: groupId,
                     type: textsecure.protobuf.GroupContext.Type.DELIVER
@@ -40042,7 +40049,7 @@ MessageSender.prototype = {
             }.bind(this));
         });
     },
-    sendExpirationTimerUpdateToGroup: function(groupId, expireTimer, timestamp) {
+    sendExpirationTimerUpdateToGroup: function(groupId, expireTimer, timestamp, profileKey) {
         return textsecure.storage.groups.getNumbers(groupId).then(function(numbers) {
             if (numbers === undefined)
                 return Promise.reject(new Error("Unknown Group"));
@@ -40057,6 +40064,7 @@ MessageSender.prototype = {
                 timestamp   : timestamp,
                 needsSync   : true,
                 expireTimer : expireTimer,
+                profileKey  : profileKey,
                 flags       : textsecure.protobuf.DataMessage.Flags.EXPIRATION_TIMER_UPDATE,
                 group: {
                     id: groupId,
@@ -40065,13 +40073,14 @@ MessageSender.prototype = {
             });
         }.bind(this));
     },
-    sendExpirationTimerUpdateToNumber: function(number, expireTimer, timestamp) {
+    sendExpirationTimerUpdateToNumber: function(number, expireTimer, timestamp, profileKey) {
         var proto = new textsecure.protobuf.DataMessage();
         return this.sendMessage({
             recipients  : [number],
             timestamp   : timestamp,
             needsSync   : true,
             expireTimer : expireTimer,
+            profileKey  : profileKey,
             flags       : textsecure.protobuf.DataMessage.Flags.EXPIRATION_TIMER_UPDATE
         });
     }
