@@ -229,6 +229,16 @@
         var details = ev.contactDetails;
 
         var id = details.number;
+
+        if (id === textsecure.storage.user.getNumber()) {
+          // special case for syncing details about ourselves
+          if (details.profileKey) {
+            console.log('Got sync message with our own profile key');
+            storage.put('profileKey', profileKey);
+          }
+          return ev.confirm();
+        }
+
         var c = new Whisper.Conversation({
             id: id
         });
